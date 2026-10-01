@@ -80,6 +80,7 @@
     padding: 16px 18px;
     margin-bottom: 14px;
     box-shadow: 0 1px 3px rgba(22,35,63,0.06);
+    overflow: hidden;
   }
   .vj-card-title {
     display: flex;
@@ -108,43 +109,81 @@
   }
   .vj-row + .vj-row { border-top: 1px solid #F0F1F5; }
   .vj-row-label { font-size: 14.5px; color: #16233F; font-weight: 500; }
-  .vj-counter { display: flex; align-items: center; gap: 10px; }
+  .vj-counter { display: flex; align-items: center; gap: 8px; }
   .vj-counter-btn {
-    width: 28px;
-    height: 28px;
+    width: 32px;
+    height: 32px;
     border-radius: 50%;
     border: none;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    font-size: 16px;
+    font-size: 18px;
     font-weight: 700;
     line-height: 1;
+    flex-shrink: 0;
   }
   .vj-counter-btn:active { transform: scale(0.88); }
   .vj-counter-btn.minus { background: #ECEDF3; color: #6B7280; }
   .vj-counter-btn.plus { background: #FF6B4A; color: #fff; }
-  .vj-counter-num { width: 22px; text-align: center; font-weight: 700; font-size: 15px; color: #16233F; }
-  .vj-inline-inputs { display: flex; gap: 10px; }
+  
+  /* Vstupní pole pro počet bodů */
+  .vj-counter-num {
+    width: 46px;
+    height: 32px;
+    text-align: center;
+    font-weight: 700;
+    font-size: 15px;
+    color: #16233F;
+    border: 1px solid #E5E7EE;
+    background: #FAFBFC;
+    border-radius: 8px;
+    padding: 0 4px;
+    font-family: inherit;
+    -moz-appearance: textfield;
+  }
+  .vj-counter-num::-webkit-outer-spin-button,
+  .vj-counter-num::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  .vj-counter-num:focus {
+    outline: 2px solid #FF6B4A33;
+    border-color: #FF6B4A;
+    background: #FFFFFF;
+  }
+
+  /* Oprava přetékání kolonek */
+  .vj-inline-inputs {
+    display: flex;
+    gap: 10px;
+    width: 100%;
+  }
   .vj-input {
-    flex: 1;
+    flex: 1 1 0%;
+    min-width: 0;
+    width: 100%;
+    max-width: 100%;
     border: 1px solid #E5E7EE;
     background: #FAFBFC;
     border-radius: 12px;
     padding: 10px 12px;
-    font-size: 16px;
+    font-size: 15px;
     color: #16233F;
     font-family: inherit;
+    appearance: none;
+    -webkit-appearance: none;
   }
   .vj-input:focus { outline: 2px solid #FF6B4A33; border-color: #FF6B4A; }
   .vj-textarea {
     width: 100%;
+    max-width: 100%;
     border: 1px solid #E5E7EE;
     background: #FAFBFC;
     border-radius: 12px;
     padding: 10px 12px;
-    font-size: 16px;
+    font-size: 15px;
     color: #16233F;
     font-family: inherit;
     resize: none;
@@ -346,7 +385,7 @@ function emptyCounts(cats) {
   return o;
 }
 function sumCounts(obj) {
-  return Object.values(obj).reduce((a, b) => a + b, 0);
+  return Object.values(obj).reduce((a, b) => a + (Number(b) || 0), 0);
 }
 function todayStr() {
   const d = new Date();
@@ -430,7 +469,7 @@ function counterRow(group, c) {
       <span class="vj-row-label">${c.label}</span>
       <div class="vj-counter">
         <button class="vj-counter-btn minus" data-action="dec" data-group="${group}" data-key="${c.key}">−</button>
-        <span class="vj-counter-num" id="count-${group}-${c.key}">${form[group][c.key]}</span>
+        <input type="number" class="vj-counter-num" id="count-${group}-${c.key}" data-group="${group}" data-key="${c.key}" value="${form[group][c.key]}" min="0" inputmode="numeric" />
         <button class="vj-counter-btn plus" data-action="inc" data-group="${group}" data-key="${c.key}">+</button>
       </div>
     </div>`;
@@ -449,7 +488,7 @@ function renderNewForm() {
 
     <div class="vj-card">
       <div class="vj-card-title"><div class="vj-icon-badge" style="background:#E9EDFB;">📅</div>Datum tréninku / zápasu</div>
-      <input class="vj-input" style="width:100%;" type="date" id="f-date" value="${form.date}" />
+      <input class="vj-input" type="date" id="f-date" value="${form.date}" />
     </div>
 
     <div class="vj-card">
@@ -586,14 +625,40 @@ function bindFormEvents(root) {
     badge.style.background = painColor(form.kneePain);
   });
 
+  /* Ovládání tlačítek + a - */
   root.querySelectorAll('[data-action="inc"], [data-action="dec"]').forEach((btn) => {
     btn.addEventListener("click", () => {
       const group = btn.dataset.group;
       const key = btn.dataset.key;
       const delta = btn.dataset.action === "inc" ? 1 : -1;
-      form[group][key] = Math.max(0, form[group][key] + delta);
-      root.querySelector(`#count-${group}-${key}`).textContent = form[group][key];
+      const currentVal = Number(form[group][key]) || 0;
+      const newVal = Math.max(0, currentVal + delta);
+      form[group][key] = newVal;
+      
+      const inputEl = root.querySelector(`#count-${group}-${key}`);
+      if (inputEl) inputEl.value = newVal;
+      
       root.querySelector("#totalPointsNum").textContent = sumCounts(form.attack) + sumCounts(form.serve);
+    });
+  });
+
+  /* Ovládání přímého psaní do políček s počtem bodů */
+  root.querySelectorAll('.vj-counter-num').forEach((input) => {
+    input.addEventListener('input', (e) => {
+      const group = e.target.dataset.group;
+      const key = e.target.dataset.key;
+      const val = parseInt(e.target.value, 10);
+      form[group][key] = isNaN(val) || val < 0 ? 0 : val;
+      root.querySelector("#totalPointsNum").textContent = sumCounts(form.attack) + sumCounts(form.serve);
+    });
+    input.addEventListener('blur', (e) => {
+      if (e.target.value === '' || parseInt(e.target.value, 10) < 0) {
+        e.target.value = 0;
+        const group = e.target.dataset.group;
+        const key = e.target.dataset.key;
+        form[group][key] = 0;
+        root.querySelector("#totalPointsNum").textContent = sumCounts(form.attack) + sumCounts(form.serve);
+      }
     });
   });
 
