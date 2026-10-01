@@ -1,0 +1,692 @@
+<!doctype html>
+<html lang="cs">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Volley Deník</title>
+<meta name="description" content="Osobní deník na shrnutí volejbalových zápasů a tréninků" />
+<meta name="theme-color" content="#16233F" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+<meta name="apple-mobile-web-app-title" content="Volley Deník" />
+<link rel="manifest" href="manifest.json" />
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
+<link rel="icon" href="icons/icon-192.png" />
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    height: 100%;
+    margin: 0;
+    overflow: hidden;
+    overscroll-behavior: none;
+    background: #F5F6FA;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif;
+  }
+  .vj-app {
+    height: 100%;
+    height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    padding-left: env(safe-area-inset-left, 0px);
+    padding-right: env(safe-area-inset-right, 0px);
+    background: #F5F6FA;
+  }
+  .vj-header {
+    padding: calc(14px + env(safe-area-inset-top, 0px)) 22px 14px;
+    flex-shrink: 0;
+  }
+  .vj-header-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .vj-title {
+    font-size: 26px;
+    font-weight: 800;
+    color: #16233F;
+    letter-spacing: -0.5px;
+    margin: 0;
+  }
+  .vj-install-btn {
+    display: none;
+    align-items: center;
+    gap: 6px;
+    background: #16233F;
+    color: #fff;
+    border: none;
+    border-radius: 20px;
+    padding: 7px 13px;
+    font-size: 12.5px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .vj-subtitle {
+    font-size: 13px;
+    color: #6B7280;
+    margin-top: 2px;
+  }
+  .vj-content {
+    flex: 1;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: contain;
+    padding: 4px 20px 20px;
+  }
+  .vj-content::-webkit-scrollbar { width: 0px; }
+  .vj-card {
+    background: #FFFFFF;
+    border-radius: 20px;
+    padding: 16px 18px;
+    margin-bottom: 14px;
+    box-shadow: 0 1px 3px rgba(22,35,63,0.06);
+  }
+  .vj-card-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 15px;
+    font-weight: 700;
+    color: #16233F;
+    margin-bottom: 12px;
+  }
+  .vj-icon-badge {
+    width: 26px;
+    height: 26px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-size: 13px;
+  }
+  .vj-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 9px 0;
+  }
+  .vj-row + .vj-row { border-top: 1px solid #F0F1F5; }
+  .vj-row-label { font-size: 14.5px; color: #16233F; font-weight: 500; }
+  .vj-counter { display: flex; align-items: center; gap: 10px; }
+  .vj-counter-btn {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 1;
+  }
+  .vj-counter-btn:active { transform: scale(0.88); }
+  .vj-counter-btn.minus { background: #ECEDF3; color: #6B7280; }
+  .vj-counter-btn.plus { background: #FF6B4A; color: #fff; }
+  .vj-counter-num { width: 22px; text-align: center; font-weight: 700; font-size: 15px; color: #16233F; }
+  .vj-inline-inputs { display: flex; gap: 10px; }
+  .vj-input {
+    flex: 1;
+    border: 1px solid #E5E7EE;
+    background: #FAFBFC;
+    border-radius: 12px;
+    padding: 10px 12px;
+    font-size: 16px;
+    color: #16233F;
+    font-family: inherit;
+  }
+  .vj-input:focus { outline: 2px solid #FF6B4A33; border-color: #FF6B4A; }
+  .vj-textarea {
+    width: 100%;
+    border: 1px solid #E5E7EE;
+    background: #FAFBFC;
+    border-radius: 12px;
+    padding: 10px 12px;
+    font-size: 16px;
+    color: #16233F;
+    font-family: inherit;
+    resize: none;
+    min-height: 60px;
+  }
+  .vj-textarea:focus { outline: 2px solid #FF6B4A33; border-color: #FF6B4A; }
+  .vj-mood-row { display: flex; justify-content: space-between; }
+  .vj-mood-btn {
+    border: none;
+    background: transparent;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 4px;
+    border-radius: 14px;
+    cursor: pointer;
+    width: 18%;
+  }
+  .vj-mood-btn.active { background: #FFF1EC; }
+  .vj-mood-emoji { font-size: 24px; line-height: 1; }
+  .vj-mood-label { font-size: 9.5px; color: #6B7280; font-weight: 600; }
+  .vj-pain-row { display: flex; align-items: center; gap: 14px; }
+  .vj-pain-slider { flex: 1; height: 4px; cursor: pointer; }
+  .vj-pain-num {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    color: #fff;
+    font-size: 13px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .vj-total-strip {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: #16233F;
+    border-radius: 18px;
+    padding: 14px 18px;
+    margin-bottom: 14px;
+  }
+  .vj-total-label { color: #A9B2C8; font-size: 12.5px; font-weight: 600; }
+  .vj-total-num { color: #fff; font-size: 26px; font-weight: 800; }
+  .vj-save-btn {
+    width: 100%;
+    background: #FF6B4A;
+    color: #fff;
+    border: none;
+    border-radius: 16px;
+    padding: 15px;
+    font-size: 15.5px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    cursor: pointer;
+    margin-bottom: 24px;
+  }
+  .vj-save-btn:active { transform: scale(0.98); }
+  .vj-tabbar {
+    display: flex;
+    border-top: 1px solid #E5E7EE;
+    background: #FFFFFF;
+    padding: 10px 20px calc(14px + env(safe-area-inset-bottom, 0px));
+    flex-shrink: 0;
+  }
+  .vj-tab {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #9AA1B2;
+    font-size: 11px;
+    font-weight: 600;
+  }
+  .vj-tab span.ico { font-size: 18px; }
+  .vj-tab.active { color: #FF6B4A; }
+  .vj-stats-strip { display: flex; gap: 10px; margin-bottom: 16px; }
+  .vj-stat-box {
+    flex: 1;
+    background: #FFFFFF;
+    border-radius: 16px;
+    padding: 12px 14px;
+    box-shadow: 0 1px 3px rgba(22,35,63,0.06);
+  }
+  .vj-stat-num { font-size: 20px; font-weight: 800; color: #16233F; }
+  .vj-stat-label { font-size: 11px; color: #6B7280; font-weight: 600; margin-top: 1px; }
+  .vj-entry-card {
+    background: #FFFFFF;
+    border-radius: 18px;
+    padding: 14px 16px;
+    margin-bottom: 12px;
+    box-shadow: 0 1px 3px rgba(22,35,63,0.06);
+  }
+  .vj-entry-top { display: flex; justify-content: space-between; align-items: flex-start; }
+  .vj-entry-date { font-size: 11.5px; color: #9AA1B2; font-weight: 600; }
+  .vj-entry-opp { font-size: 15px; font-weight: 700; color: #16233F; margin-top: 1px; }
+  .vj-entry-score { font-size: 12px; color: #6B7280; margin-top: 1px; }
+  .vj-entry-right { display: flex; align-items: center; gap: 10px; }
+  .vj-entry-points { text-align: right; }
+  .vj-entry-points-num { font-size: 20px; font-weight: 800; color: #FF6B4A; }
+  .vj-entry-points-label { font-size: 9.5px; color: #9AA1B2; font-weight: 600; }
+  .vj-entry-del { background: none; border: none; color: #D9DCE5; cursor: pointer; padding: 4px; font-size: 15px; }
+  .vj-entry-pain-badge {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid #F0F1F5;
+    font-size: 12.5px;
+    color: #4B5568;
+  }
+  .vj-entry-notes {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid #F0F1F5;
+    font-size: 13px;
+    color: #4B5568;
+    line-height: 1.45;
+  }
+  .vj-entry-notes b { color: #16233F; }
+  .vj-empty { text-align: center; padding: 60px 20px; color: #9AA1B2; }
+  .vj-empty-emoji { font-size: 40px; margin-bottom: 10px; }
+  .vj-toast {
+    position: fixed;
+    top: calc(env(safe-area-inset-top, 0px) + 14px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: #16233F;
+    color: #fff;
+    padding: 9px 18px;
+    border-radius: 30px;
+    font-size: 13px;
+    font-weight: 600;
+    z-index: 20;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.25);
+    display: none;
+    max-width: 85%;
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+<div class="vj-app">
+  <div class="vj-toast" id="toast"></div>
+
+  <div class="vj-header">
+    <div class="vj-header-top">
+      <p class="vj-title">Volley Deník</p>
+      <button class="vj-install-btn" id="installBtn">📲 Přidat</button>
+    </div>
+    <p class="vj-subtitle" id="subtitle">Zapiš si, jak ti to dnes šlo</p>
+  </div>
+
+  <div class="vj-content" id="content"></div>
+
+  <div class="vj-tabbar">
+    <button class="vj-tab active" id="tabNew"><span class="ico">✏️</span>Nový zápis</button>
+    <button class="vj-tab" id="tabHistory"><span class="ico">🕑</span>Historie</button>
+  </div>
+</div>
+
+<script>
+"use strict";
+
+const STORAGE_KEY = "volley-denik-entries";
+
+const ATTACK_CATS = [
+  { key: "ostra", label: "Ostrá diagonála" },
+  { key: "diag", label: "Diagonála" },
+  { key: "cara", label: "Na čáru" },
+];
+const SERVE_CATS = [
+  { key: "debl", label: "Do debla" },
+  { key: "zadni", label: "Zadní lajna" },
+  { key: "lajna", label: "Na lajnu" },
+];
+const MOODS = [
+  { key: 1, emoji: "😞", label: "Špatný" },
+  { key: 2, emoji: "😕", label: "Slabší" },
+  { key: 3, emoji: "🙂", label: "OK" },
+  { key: 4, emoji: "😃", label: "Dobrý" },
+  { key: 5, emoji: "🤩", label: "Skvělý" },
+];
+
+function emptyCounts(cats) {
+  const o = {};
+  cats.forEach((c) => (o[c.key] = 0));
+  return o;
+}
+function sumCounts(obj) {
+  return Object.values(obj).reduce((a, b) => a + b, 0);
+}
+function todayStr() {
+  const d = new Date();
+  const pad = (n) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+function painColor(level) {
+  if (level <= 3) return "#8CC084";
+  if (level <= 6) return "#E7A400";
+  return "#E4573D";
+}
+function formatDateStr(iso) {
+  const [y, m, day] = String(iso).slice(0, 10).split("-").map(Number);
+  const d = new Date(y, m - 1, day);
+  return d.toLocaleDateString("cs-CZ", { day: "numeric", month: "long", year: "numeric" });
+}
+function escapeHtml(str) {
+  return String(str == null ? "" : str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+let entries = [];
+try {
+  const raw = localStorage.getItem(STORAGE_KEY);
+  entries = raw ? JSON.parse(raw) : [];
+} catch (e) {
+  entries = [];
+}
+
+let activeTab = "new";
+let toastTimer = null;
+
+function freshForm() {
+  return {
+    date: todayStr(),
+    opponent: "",
+    score: "",
+    attack: emptyCounts(ATTACK_CATS),
+    serve: emptyCounts(SERVE_CATS),
+    mood: null,
+    kneePain: 0,
+    kneePainNote: "",
+    wentWell: "",
+    improve: "",
+  };
+}
+let form = freshForm();
+
+function persistEntries() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+  } catch (e) {
+    console.error("Nepodařilo se uložit data", e);
+  }
+}
+
+function showToast(msg) {
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  t.style.display = "block";
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => (t.style.display = "none"), 2200);
+}
+
+function switchTab(tab) {
+  activeTab = tab;
+  document.getElementById("tabNew").classList.toggle("active", tab === "new");
+  document.getElementById("tabHistory").classList.toggle("active", tab === "history");
+  document.getElementById("subtitle").textContent =
+    tab === "new" ? "Zapiš si, jak ti to dnes šlo" : "Tvoje odehrané zápasy";
+  renderContent();
+}
+
+function counterRow(group, c) {
+  return `
+    <div class="vj-row">
+      <span class="vj-row-label">${c.label}</span>
+      <div class="vj-counter">
+        <button class="vj-counter-btn minus" data-action="dec" data-group="${group}" data-key="${c.key}">−</button>
+        <span class="vj-counter-num" id="count-${group}-${c.key}">${form[group][c.key]}</span>
+        <button class="vj-counter-btn plus" data-action="inc" data-group="${group}" data-key="${c.key}">+</button>
+      </div>
+    </div>`;
+}
+
+function renderNewForm() {
+  const totalPoints = sumCounts(form.attack) + sumCounts(form.serve);
+  return `
+    <div class="vj-total-strip">
+      <div>
+        <div class="vj-total-label">BODY CELKEM</div>
+        <div class="vj-total-num" id="totalPointsNum">${totalPoints}</div>
+      </div>
+      <div style="font-size:28px;">🏆</div>
+    </div>
+
+    <div class="vj-card">
+      <div class="vj-card-title"><div class="vj-icon-badge" style="background:#E9EDFB;">📅</div>Datum tréninku / zápasu</div>
+      <input class="vj-input" style="width:100%;" type="date" id="f-date" value="${form.date}" />
+    </div>
+
+    <div class="vj-card">
+      <div class="vj-inline-inputs">
+        <input class="vj-input" id="f-opponent" placeholder="Soupeř (nepovinné)" value="${escapeHtml(form.opponent)}" />
+        <input class="vj-input" id="f-score" placeholder="Výsledek, např. 3:1" value="${escapeHtml(form.score)}" />
+      </div>
+    </div>
+
+    <div class="vj-card">
+      <div class="vj-card-title"><div class="vj-icon-badge" style="background:#FFEDE8;">⚔️</div>Body z útoku</div>
+      ${ATTACK_CATS.map((c) => counterRow("attack", c)).join("")}
+    </div>
+
+    <div class="vj-card">
+      <div class="vj-card-title"><div class="vj-icon-badge" style="background:#FFF6DE;">📤</div>Body z podání</div>
+      ${SERVE_CATS.map((c) => counterRow("serve", c)).join("")}
+    </div>
+
+    <div class="vj-card">
+      <div class="vj-card-title">Jak ses dnes cítil/a?</div>
+      <div class="vj-mood-row">
+        ${MOODS.map(
+          (m) => `
+          <button class="vj-mood-btn ${form.mood === m.key ? "active" : ""}" data-action="mood" data-key="${m.key}">
+            <span class="vj-mood-emoji">${m.emoji}</span>
+            <span class="vj-mood-label">${m.label}</span>
+          </button>`
+        ).join("")}
+      </div>
+    </div>
+
+    <div class="vj-card">
+      <div class="vj-card-title"><div class="vj-icon-badge" style="background:#FDEDED;">🩹</div>Bolest kolene</div>
+      <div class="vj-pain-row">
+        <input class="vj-pain-slider" id="f-pain" type="range" min="0" max="10" step="1" value="${form.kneePain}" />
+        <span class="vj-pain-num" id="f-pain-num" style="background:${painColor(form.kneePain)};">${form.kneePain}</span>
+      </div>
+      <textarea class="vj-textarea" style="margin-top:10px;" id="f-pain-note" placeholder="Kdy to bolí, jak moc to omezuje pohyb...">${escapeHtml(form.kneePainNote)}</textarea>
+    </div>
+
+    <div class="vj-card">
+      <div class="vj-card-title">Co se mi povedlo</div>
+      <textarea class="vj-textarea" id="f-wentwell" placeholder="Např. dobré čtení bloku, útoky na čáru fungovaly...">${escapeHtml(form.wentWell)}</textarea>
+    </div>
+
+    <div class="vj-card">
+      <div class="vj-card-title">V čem se zlepšit</div>
+      <textarea class="vj-textarea" id="f-improve" placeholder="Např. víc riskovat na podání, rychlejší přechod do obrany...">${escapeHtml(form.improve)}</textarea>
+    </div>
+
+    <button class="vj-save-btn" id="f-save">💾 Uložit zápis</button>
+  `;
+}
+
+function renderHistory() {
+  const totalGames = entries.length;
+  const totalCareerPoints = entries.reduce((s, e) => s + sumCounts(e.attack) + sumCounts(e.serve), 0);
+
+  let body;
+  if (entries.length === 0) {
+    body = `<div class="vj-empty"><div class="vj-empty-emoji">🏐</div>Zatím žádné zápisy.<br/>Přidej svůj první zápas!</div>`;
+  } else {
+    body = entries
+      .map((e) => {
+        const pts = sumCounts(e.attack) + sumCounts(e.serve);
+        const moodInfo = MOODS.find((m) => m.key === e.mood);
+        return `
+        <div class="vj-entry-card">
+          <div class="vj-entry-top">
+            <div>
+              <div class="vj-entry-date">${formatDateStr(e.date)}</div>
+              <div class="vj-entry-opp">${escapeHtml(e.opponent || "Zápas")}${moodInfo ? "  " + moodInfo.emoji : ""}</div>
+              ${e.score ? `<div class="vj-entry-score">Výsledek: ${escapeHtml(e.score)}</div>` : ""}
+            </div>
+            <div class="vj-entry-right">
+              <div class="vj-entry-points">
+                <div class="vj-entry-points-num">${pts}</div>
+                <div class="vj-entry-points-label">BODŮ</div>
+              </div>
+              <button class="vj-entry-del" data-action="delete" data-id="${e.id}">🗑️</button>
+            </div>
+          </div>
+          ${
+            e.kneePain
+              ? `<div class="vj-entry-pain-badge">
+                  <span class="vj-pain-num" style="background:${painColor(e.kneePain)}; width:20px; height:20px; font-size:11px;">${e.kneePain}</span>
+                  <span>Koleno${e.kneePainNote ? ": " + escapeHtml(e.kneePainNote) : ""}</span>
+                </div>`
+              : ""
+          }
+          ${
+            e.wentWell || e.improve
+              ? `<div class="vj-entry-notes">
+                  ${e.wentWell ? `<div><b>Povedlo se:</b> ${escapeHtml(e.wentWell)}</div>` : ""}
+                  ${e.improve ? `<div style="margin-top:4px;"><b>Zlepšit:</b> ${escapeHtml(e.improve)}</div>` : ""}
+                </div>`
+              : ""
+          }
+        </div>`;
+      })
+      .join("");
+  }
+
+  return `
+    <div class="vj-stats-strip">
+      <div class="vj-stat-box"><div class="vj-stat-num">${totalGames}</div><div class="vj-stat-label">ZÁPASŮ</div></div>
+      <div class="vj-stat-box"><div class="vj-stat-num">${totalCareerPoints}</div><div class="vj-stat-label">BODŮ CELKEM</div></div>
+    </div>
+    ${body}
+  `;
+}
+
+function renderContent() {
+  const el = document.getElementById("content");
+  el.innerHTML = activeTab === "new" ? renderNewForm() : renderHistory();
+  if (activeTab === "new") bindFormEvents(el);
+  else bindHistoryEvents(el);
+}
+
+function bindFormEvents(root) {
+  root.querySelector("#f-date").addEventListener("change", (e) => (form.date = e.target.value));
+  root.querySelector("#f-opponent").addEventListener("input", (e) => (form.opponent = e.target.value));
+  root.querySelector("#f-score").addEventListener("input", (e) => (form.score = e.target.value));
+  root.querySelector("#f-wentwell").addEventListener("input", (e) => (form.wentWell = e.target.value));
+  root.querySelector("#f-improve").addEventListener("input", (e) => (form.improve = e.target.value));
+  root.querySelector("#f-pain-note").addEventListener("input", (e) => (form.kneePainNote = e.target.value));
+
+  const painSlider = root.querySelector("#f-pain");
+  painSlider.addEventListener("input", (e) => {
+    form.kneePain = Number(e.target.value);
+    const badge = root.querySelector("#f-pain-num");
+    badge.textContent = form.kneePain;
+    badge.style.background = painColor(form.kneePain);
+  });
+
+  root.querySelectorAll('[data-action="inc"], [data-action="dec"]').forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const group = btn.dataset.group;
+      const key = btn.dataset.key;
+      const delta = btn.dataset.action === "inc" ? 1 : -1;
+      form[group][key] = Math.max(0, form[group][key] + delta);
+      root.querySelector(`#count-${group}-${key}`).textContent = form[group][key];
+      root.querySelector("#totalPointsNum").textContent = sumCounts(form.attack) + sumCounts(form.serve);
+    });
+  });
+
+  root.querySelectorAll('[data-action="mood"]').forEach((btn) => {
+    btn.addEventListener("click", () => {
+      form.mood = Number(btn.dataset.key);
+      root.querySelectorAll('[data-action="mood"]').forEach((b) =>
+        b.classList.toggle("active", Number(b.dataset.key) === form.mood)
+      );
+    });
+  });
+
+  root.querySelector("#f-save").addEventListener("click", handleSave);
+}
+
+function bindHistoryEvents(root) {
+  root.querySelectorAll('[data-action="delete"]').forEach((btn) => {
+    btn.addEventListener("click", () => {
+      entries = entries.filter((e) => e.id !== btn.dataset.id);
+      persistEntries();
+      renderContent();
+    });
+  });
+}
+
+function handleSave() {
+  const entry = {
+    id: Date.now().toString(),
+    date: form.date,
+    opponent: form.opponent.trim(),
+    score: form.score.trim(),
+    attack: { ...form.attack },
+    serve: { ...form.serve },
+    mood: form.mood,
+    kneePain: form.kneePain,
+    kneePainNote: form.kneePainNote.trim(),
+    wentWell: form.wentWell.trim(),
+    improve: form.improve.trim(),
+  };
+  entries = [entry, ...entries];
+  persistEntries();
+  form = freshForm();
+  showToast("Zápis uložen");
+  switchTab("history");
+}
+
+document.getElementById("tabNew").addEventListener("click", () => switchTab("new"));
+document.getElementById("tabHistory").addEventListener("click", () => switchTab("history"));
+
+renderContent();
+
+// ---- PWA install handling ----
+(function setupInstall() {
+  const installBtn = document.getElementById("installBtn");
+  const isStandalone =
+    window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true;
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+
+  if (isStandalone) return;
+
+  if (isIOS) {
+    installBtn.style.display = "inline-flex";
+    installBtn.addEventListener("click", () => {
+      showToast("Klepni na Sdílet ⬆️ a pak „Přidat na plochu“");
+    });
+  } else {
+    let deferredPrompt = null;
+    window.addEventListener("beforeinstallprompt", (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      installBtn.style.display = "inline-flex";
+    });
+    installBtn.addEventListener("click", async () => {
+      if (!deferredPrompt) return;
+      deferredPrompt.prompt();
+      await deferredPrompt.userChoice;
+      deferredPrompt = null;
+      installBtn.style.display = "none";
+    });
+    window.addEventListener("appinstalled", () => {
+      installBtn.style.display = "none";
+    });
+  }
+})();
+
+// ---- Service worker registration ----
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("sw.js").catch((err) => {
+      console.warn("Service worker se nepodařilo zaregistrovat:", err);
+    });
+  });
+}
+</script>
+</body>
+</html>
